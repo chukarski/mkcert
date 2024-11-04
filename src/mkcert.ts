@@ -11,7 +11,7 @@ type GenerateOptions = {
   subject: pki.CertificateField[];
   issuer: pki.CertificateField[];
   extensions: Record<string, unknown>[];
-  validity: number;
+  validity: number | Date;
   signWith?: string;
 };
 
@@ -31,8 +31,13 @@ async function generateCert(options: GenerateOptions): Promise<Certificate> {
   cert.setIssuer(issuer);
   cert.setExtensions(extensions);
   cert.validity.notBefore = new Date();
-  cert.validity.notAfter = new Date();
-  cert.validity.notAfter.setDate(cert.validity.notAfter.getDate() + validity);
+  // Date object, use it directly
+  if (validity instanceof Date) {
+    cert.validity.notAfter = validity;
+  } else {
+    cert.validity.notAfter = new Date();
+    cert.validity.notAfter.setDate(cert.validity.notAfter.getDate() + validity);
+  }
 
   // sign the certificate with it's own
   // private key if no separate signing key is provided
@@ -50,7 +55,7 @@ export type CertificateAuthorityOptions = {
   countryCode: string;
   state: string;
   locality: string;
-  validity: number;
+  validity: number | Date;
 };
 
 export async function createCA(options: CertificateAuthorityOptions): Promise<Certificate> {
@@ -79,7 +84,7 @@ export async function createCA(options: CertificateAuthorityOptions): Promise<Ce
 
 export type CertificateOptions = {
   domains: string[];
-  validity: number;
+  validity: number | Date;
   organization?: string;
   email?: string;
   ca: Certificate;

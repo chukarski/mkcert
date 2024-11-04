@@ -58,3 +58,29 @@ test("Verify Certificate Chain", async () => {
     pki.verifyCertificateChain(caStore, [serverCert]);
   }).not.toThrow();
 });
+
+test("Create Certificate with Date", async () => {
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const seconds_since_epoch = Math.floor(tomorrow.getTime()/1000);
+  const ca_bundle = await mkcert.createCA({
+    organization: "Test CA",
+    countryCode: "NP",
+    state: "Bagmati",
+    locality: "Kathmandu",
+    validity: tomorrow
+  });
+  const ca_cert = pki.certificateFromPem(ca_bundle.cert);
+  expect(ca_cert.validity.notAfter.getTime()).toBe(seconds_since_epoch*1000);
+
+  const tls_bundle = await mkcert.createCert({
+    ca: { key: ca_bundle.key, cert: ca_bundle.cert },
+    domains: ["127.0.0.1", "localhost"],
+    email: "abc@example.com",
+    organization: "Test Cert",
+    validity: tomorrow
+  });
+
+  const cert = pki.certificateFromPem(tls_bundle.cert);
+  expect(cert.validity.notAfter.getTime()).toBe(seconds_since_epoch*1000);
+});
